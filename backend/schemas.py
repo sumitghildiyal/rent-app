@@ -1,12 +1,12 @@
 from pydantic import BaseModel
-from typing import Optional
+from datetime import date
 
 class RentRecordBase(BaseModel):
     floor_no: int
     amount: float
-    date: str
+    date: date
     mode: str
-    description: Optional[str] = None
+    description: str | None = None
 
 class RentRecordCreate(RentRecordBase):
     pass

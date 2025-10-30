@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
 
-// Automatically picks backend URL
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "https://rent-app-uoah.onrender.com";
+  import.meta.env.VITE_API_URL || "https://rent-app-uoah.onrender.com";
 
 function App() {
   const [records, setRecords] = useState([]);
   const [formData, setFormData] = useState({
-    tenant_name: "",
-    house_name: "",
-    rent_amount: "",
+    floor_no: "",
+    amount: "",
     date: "",
+    mode: "",
+    description: "",
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -35,36 +35,52 @@ function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const method = editingId ? "PUT" : "POST";
-    const url = editingId
-      ? `${API_BASE}/records/${editingId}`
-      : `${API_BASE}/records`;
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error("Error saving record");
-      await fetchRecords();
-      setFormData({
-        tenant_name: "",
-        house_name: "",
-        rent_amount: "",
-        date: "",
-      });
-      setEditingId(null);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  // ensure proper data types
+  const cleanData = {
+    floor_no: Number(formData.floor_no),
+    amount: Number(formData.amount),
+    date: formData.date,
+    mode: formData.mode.trim(),
+    description: formData.description.trim() || null,
   };
+
+  const method = editingId ? "PUT" : "POST";
+  const url = editingId
+    ? `${API_BASE}/records/${editingId}`
+    : `${API_BASE}/records`;
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cleanData),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error("Backend Error:", err);
+      throw new Error("Error saving record");
+    }
+
+    await fetchRecords();
+    setFormData({
+      floor_no: "",
+      amount: "",
+      date: "",
+      mode: "",
+      description: "",
+    });
+    setEditingId(null);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEdit = (record) => {
     setFormData(record);
@@ -82,29 +98,23 @@ function App() {
   };
 
   return (
-    <div className="container">
+    <div className="container" style={{ maxWidth: "700px", margin: "auto" }}>
       <h1>🏠 Rent Record Dashboard</h1>
 
       <form onSubmit={handleSubmit} className="form">
         <input
-          name="tenant_name"
-          placeholder="Tenant Name"
-          value={formData.tenant_name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="house_name"
-          placeholder="House Name"
-          value={formData.house_name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="rent_amount"
-          placeholder="Rent Amount"
+          name="floor_no"
+          placeholder="Floor No"
           type="number"
-          value={formData.rent_amount}
+          value={formData.floor_no}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="amount"
+          placeholder="Amount (₹)"
+          type="number"
+          value={formData.amount}
           onChange={handleChange}
           required
         />
@@ -115,6 +125,19 @@ function App() {
           value={formData.date}
           onChange={handleChange}
           required
+        />
+        <input
+          name="mode"
+          placeholder="Mode (e.g. Cash, UPI)"
+          value={formData.mode}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="description"
+          placeholder="Description"
+          value={formData.description}
+          onChange={handleChange}
         />
         <button type="submit" disabled={loading}>
           {loading ? "Saving..." : editingId ? "Update" : "Add Record"}
@@ -128,20 +151,22 @@ function App() {
         <table>
           <thead>
             <tr>
-              <th>Tenant</th>
-              <th>House</th>
-              <th>Rent</th>
+              <th>Floor</th>
+              <th>Amount</th>
               <th>Date</th>
+              <th>Mode</th>
+              <th>Description</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {records.map((r) => (
               <tr key={r.id}>
-                <td>{r.tenant_name}</td>
-                <td>{r.house_name}</td>
-                <td>₹{r.rent_amount}</td>
+                <td>{r.floor_no}</td>
+                <td>₹{r.amount}</td>
                 <td>{r.date}</td>
+                <td>{r.mode}</td>
+                <td>{r.description}</td>
                 <td>
                   <button onClick={() => handleEdit(r)}>Edit</button>
                   <button onClick={() => handleDelete(r.id)}>Delete</button>

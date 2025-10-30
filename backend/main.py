@@ -50,3 +50,14 @@ def update_record(record_id: int, updated: RentRecordCreate, db: Session = Depen
     db.commit()
     db.refresh(record)
     return record
+
+
+@app.delete("/records/{record_id}")
+def delete_record(record_id: int, db: Session = Depends(get_db)):
+    record = db.query(models.RentRecord).filter(models.RentRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+    db.delete(record)
+    db.commit()
+    return {"message": "Record deleted successfully"}
+
